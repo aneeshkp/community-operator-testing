@@ -148,7 +148,7 @@ setupOperatorFunction(){
 
 
     echo "----------------------------------- getting  other git projects"
-
+    
     if [ $OPERATOR_TYPE == "upstream-community-operators" ]
     then
         echo "pulling other required repo"
@@ -157,25 +157,13 @@ setupOperatorFunction(){
         git clone https://github.com/operator-framework/operator-courier.git
         git clone https://github.com/operator-framework/operator-lifecycle-manager.git
     else
-     cat <<EOF > $OPERATOR_DIRECTORY/$OPERATOR_NAME/1.operatorsource.yaml
-            apiVersion: operators.coreos.com/v1
-            kind: OperatorSource
-            metadata:
-                name: enmasse-community-operators-test 
-                namespace: openshift-marketplace
-            spec:
-                type: appregistry
-                endpoint: https://quay.io/cnr
-                registryNamespace: YOUR_NAMESPACE 
-                displayName: "Test Community Operators"
-                publisher: "Red Hat"
-        EOF
-
+        cd $OPERATOR_DIRECTORY/$OPERATOR_NAME
+        git clone https://github.com/operator-framework/operator-courier.git
     fi
 
     echo "----------------------------------- All set"
     echo "make sure you run [pip3 install operator-courier]"
-    echo "cd $OPERATOR_DIRECTORY/$OPERATOR_NAME/$OPERATOR_TYPE"
     ls $OPERATOR_DIRECTORY 
+    echo "cd $OPERATOR_DIRECTORY/$OPERATOR_NAME/$OPERATOR_TYPE"
     cd $OPERATOR_DIRECTORY
 }
