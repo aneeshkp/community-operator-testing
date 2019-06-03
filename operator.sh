@@ -1,6 +1,6 @@
 #!/bin/sh
 source="https://github.com/operator-framework/community-operators.git"
-OPERAOTR_DIRECTORY="$HOME/tigeroperators"
+OPERATOR_DIRECTORY="$HOME/tigeroperators"
 #export OPERATOR_TYPE="community-operators" 
 #export OPERATOR_NAME="NONAMEOPERATOR"
 #export BRANCH_NAME="master"
@@ -29,15 +29,30 @@ helpTestFunction()
 
         2 - LINTING
        
-         operator-courier verify --ui_validate_io $OPERAOTR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME
+         operator-courier verify --ui_validate_io $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME
          
 
         3 - QUAY PUSHING
          operator-courier push OPERATOR_DIR QUAY_NAMESPACE PACKAGE_NAME PACKAGE_VERSION TOKEN
          
          -----------------------------------------------------------------------------------------------
-         
          "
+    if [ $OPERATOR_TYPE == "upstream-community-operators" ] 
+    then
+       echo "  
+       INSTALL OLM
+       ----------------------
+       kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.10.0/crds.yaml
+       kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.10.0/olm.yaml
+
+       INSTALL MARKET PLACE
+       ----------------------  
+       (find it here $OPERATOR_DIRECTORY/$OPERATOR_NAME/)
+
+       kubectl apply -f operator-marketplace/deploy/upstream/
+
+       "
+    fi 
          
         
 }
@@ -100,36 +115,36 @@ startupMenuFunction
 
 setupOperatorFunction(){
     # Begin script in case all parameters are correct
-    if [ -d $OPERAOTR_DIRECTORY ] 
+    if [ -d $OPERATOR_DIRECTORY ] 
     then
-        echo "Directory OPERAOTR_DIRECTORY exists" 
+        echo "Directory OPERATOR_DIRECTORY exists" 
     else
-        echo "Error: Directory OPERAOTR_DIRECTORY does not exists."
-        read -p "Do you want to create directory OPERAOTR_DIRECTORY? " -n 1 -r
+        echo "Error: Directory OPERATOR_DIRECTORY does not exists."
+        read -p "Do you want to create directory OPERATOR_DIRECTORY? " -n 1 -r
         echo    # (optional) move to a new line
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
         # do dangerous stuff
-        mkdir "$OPERAOTR_DIRECTORY"
-        echo " Directory $OPERAOTR_DIRECTORY created."
+        mkdir "$OPERATOR_DIRECTORY"
+        echo " Directory $OPERATOR_DIRECTORY created."
         else
         exit 1
         fi
     fi
 
-    if [ -d $OPERAOTR_DIRECTORY/$OPERATOR_NAME ] 
+    if [ -d $OPERATOR_DIRECTORY/$OPERATOR_NAME ] 
     then
-        echo "$OPERAOTR_DIRECTORY/$OPERATOR_NAME ... cleaning up" 
-        rm -rf $OPERAOTR_DIRECTORY/$OPERATOR_NAME 
+        echo "$OPERATOR_DIRECTORY/$OPERATOR_NAME ... cleaning up" 
+        rm -rf $OPERATOR_DIRECTORY/$OPERATOR_NAME 
     fi
     echo "Error: Directory $OPERATOR_NAME does not exists."
-    mkdir "$OPERAOTR_DIRECTORY/$OPERATOR_NAME"
-    echo " Directory $OPERAOTR_DIRECTORY/$OPERATOR_NAME created."
+    mkdir "$OPERATOR_DIRECTORY/$OPERATOR_NAME"
+    echo " Directory $OPERATOR_DIRECTORY/$OPERATOR_NAME created."
 
     #Begin git  clone and PR's
-    cd $OPERAOTR_DIRECTORY/$OPERATOR_NAME/
+    cd $OPERATOR_DIRECTORY/$OPERATOR_NAME/
     git clone $source
-    cd $OPERAOTR_DIRECTORY/$OPERATOR_NAME/community-operators 
+    cd $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators 
     git fetch origin pull/$PULL_ID/head:$BRANCH_NAME
     git checkout $BRANCH_NAME
 
@@ -139,7 +154,7 @@ setupOperatorFunction(){
     if [ $OPERATOR_TYPE == "upstream-community-operators" ]
     then
         echo "pulling other required repo"
-        cd $OPERAOTR_DIRECTORY/$OPERATOR_NAME
+        cd $OPERATOR_DIRECTORY/$OPERATOR_NAME
         git clone https://github.com/operator-framework/operator-marketplace.git
         git clone https://github.com/operator-framework/operator-courier.git
         git clone https://github.com/operator-framework/operator-lifecycle-manager.git
@@ -147,6 +162,7 @@ setupOperatorFunction(){
 
     echo "----------------------------------- All set"
     echo "make sure you run [pip3 install operator-courier]"
-    echo "cd $OPERAOTR_DIRECTORY/$OPERATOR_NAME/$OPERATOR_TYPE"
-    cd $OPERAOTR_DIRECTORY
+    echo "cd $OPERATOR_DIRECTORY/$OPERATOR_NAME/$OPERATOR_TYPE"
+    ls $OPERATOR_DIRECTORY 
+    cd $OPERATOR_DIRECTORY
 }
