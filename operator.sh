@@ -70,8 +70,8 @@ operatorSetup(){
         read selection
         echo ""
         case $selection in
-            1 ) export OPERATOR_TYPE="community-operators" break;;
-            2 ) export OPERATOR_TYPE="upstream-community-operators" break;;
+            1 ) export OPERATOR_TYPE="community-operators" ;;
+            2 ) export OPERATOR_TYPE="upstream-community-operators" ;;
             * ) echo "Please enter 1, pr 2"
         esac
     echo "You selectd operator type as $OPERATOR_TYPE"
@@ -102,16 +102,14 @@ startupMenuFunction(){
         read selection
         echo ""
         case $selection in
-            1 ) operatorSetup break;;
-            2 ) helpTestFunction break;;
+            1 ) operatorSetup ;;
+            2 ) helpTestFunction ;;
             * ) echo "Please enter 1 or 2"
         esac
 
 }
 
 startupMenuFunction
-
-
 
 setupOperatorFunction(){
     # Begin script in case all parameters are correct
@@ -158,6 +156,21 @@ setupOperatorFunction(){
         git clone https://github.com/operator-framework/operator-marketplace.git
         git clone https://github.com/operator-framework/operator-courier.git
         git clone https://github.com/operator-framework/operator-lifecycle-manager.git
+    else
+     cat <<EOF > $OPERATOR_DIRECTORY/$OPERATOR_NAME/1.operatorsource.yaml
+            apiVersion: operators.coreos.com/v1
+            kind: OperatorSource
+            metadata:
+                name: enmasse-community-operators-test 
+                namespace: openshift-marketplace
+            spec:
+                type: appregistry
+                endpoint: https://quay.io/cnr
+                registryNamespace: YOUR_NAMESPACE 
+                displayName: "Test Community Operators"
+                publisher: "Red Hat"
+        EOF
+
     fi
 
     echo "----------------------------------- All set"
