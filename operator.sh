@@ -20,11 +20,17 @@ helpFunction()
    exit 1 # Exit script after printing help
 }
 helpTestFunction()
-{
+{ 
+    echo "Enter your quay username"
+    read QUAY_NAMESPACE
+    
+    PACKAGE_NAME="$(cat $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/*package* | grep packageName | cut -f 2 -d' ')"
+    PACKAGE_VERSION="$(cat $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/*package* | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- )"
+    
     echo "
        TEST OPTIONS   
        -----------------------------------------------------------------------------------------------
-        1 - GET Quay Token :  $HOME/tigeroperators/operator-courier/scripts/get-quay-token
+        1 - GET Quay Token :  $OPERATOR_DIRECTORY/$OPERATOR_NAME/operator-courier/scripts/get-quay-token
          ( Then set it to export QUAY_TOKEN=""basic abcdefghijkl=="")
 
         2 - LINTING
@@ -33,7 +39,7 @@ helpTestFunction()
          
 
         3 - QUAY PUSHING
-         operator-courier push OPERATOR_DIR QUAY_NAMESPACE PACKAGE_NAME PACKAGE_VERSION TOKEN
+         operator-courier push \""$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME"\" \""$QUAY_NAMESPACE"\" \""$PACKAGE_NAME"\" \""$PACKAGE_VERSION"\" \""$QUAY_TOKEN"\"
          
          -----------------------------------------------------------------------------------------------
          "
@@ -147,17 +153,16 @@ setupOperatorFunction(){
     git checkout $BRANCH_NAME
 
 
-    echo "----------------------------------- getting  other git projects"
-    
     if [ $OPERATOR_TYPE == "upstream-community-operators" ]
     then
         echo "pulling other required repo"
-        cd $OPERATOR_DIRECTORY/$OPERATOR_NAME
-        git clone https://github.com/operator-framework/operator-marketplace.git
-        git clone https://github.com/operator-framework/operator-courier.git
-        git clone https://github.com/operator-framework/operator-lifecycle-manager.git
+        cd $OPERATOR_DIRECTORY/$OPERATOR_NAME/
+        git clone https://github.com/operator-framework/operaoperator-courier push OPERATOR_DIR QUAY_NAMESPACE PACKAGE_NAME PACKAGE_VERSION TOKEN
+        git clone https://github.com/operator-framework/operaoperator-courier push OPERATOR_DIR QUAY_NAMESPACE PACKAGE_NAME PACKAGE_VERSION TOKEN
+        git clone https://github.com/operator-framework/operaoperator-courier push OPERATOR_DIR QUAY_NAMESPACE PACKAGE_NAME PACKAGE_VERSION TOKENit
     else
-        cd $OPERATOR_DIRECTORY/$OPERATOR_NAME
+        echo "pulling other required repo (operator courier)"operator-courier push OPERATOR_DIR QUAY_NAMESPACE PACKAGE_NAME PACKAGE_VERSION TOKEN
+        cd $OPERATOR_DIRECTORY/$OPERATOR_NAME/
         git clone https://github.com/operator-framework/operator-courier.git
     fi
 
