@@ -1,0 +1,174 @@
+#!/bin/sh
+createFilesForOCPFunction(){
+    /bin/cat > ./1.OperatorSource.yaml << EOF1
+            apiVersion: operators.coreos.com/v1
+            kind: OperatorSource
+            metadata:
+              name: enmasse-community-operators-test 
+              namespace: openshift-marketplace
+            spec:
+              type: appregistry
+              endpoint: https://quay.io/cnr
+              registryNamespace: YOUR_NAMESPACE 
+              displayName: "Test Community Operators"
+              publisher: "Red Hat"
+            
+EOF1
+
+    /bin/cat > ./2.CatalogSourceConfig.yaml << EOF2
+            apiVersion: operators.coreos.com/v1
+            kind: CatalogSourceConfig
+            metadata:
+              name: $OPERATOR_NAME-installed-community-operators-test
+              namespace: openshift-marketplace
+            spec:
+              targetNamespace: openshift-operator-lifecycle-manager
+              packages: $OPERATOR_NAME
+              csDisplayName: "Test Community Operators"
+              csPublisher: "Red Hat"
+EOF2
+ /bin/cat > ./3.OperatorGroup.yaml << EOF3
+            apiVersion: operators.coreos.com/v1alpha2
+            kind: OperatorGroup
+            metadata:
+              name: $OPERATOR_NAME
+              namespace: openshift-operators
+            spec:
+              targetNamespace:
+                - default
+
+
+            
+EOF3
+
+    /bin/cat > ./4.Subscription.yaml << EOF4
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: $OPERATOR_NAME
+              namespace: openshift-operator-lifecycle-manager
+            spec:
+              channel: alpha
+              name: $OPERATOR_NAME
+              source: $OPERATOR_NAME-installed-community-operators-test
+              sourceNamespace: openshift-operator-lifecycle-manager
+
+            
+EOF4
+
+}
+
+
+createFilesForKubernetesFunction(){
+    /bin/cat > ./1.OperatorSource.yaml << EOF1
+            apiVersion: operators.coreos.com/v1
+            kind: OperatorSource
+            metadata:
+              name: $OPERATOR_NAME-upstream-community-operators-test 
+              namespace: marketplace
+            spec:
+              type: appregistry
+              endpoint: https://quay.io/cnr
+              registryNamespace: YOUR_NAMESPACE 
+              displayName: "Test Upstream Community Operators"
+              publisher: "Red Hat"
+            
+EOF1
+
+    /bin/cat > ./2.CatalogSourceConfig.yaml << EOF2
+            apiVersion: operators.coreos.com/v1
+            kind: CatalogSourceConfig
+            metadata:
+              name: $OPERATOR_NAME-installed-upstream-community-operators-test
+              namespace: marketplace
+            spec:
+              targetNamespace: olm
+              packages: $OPERATOR_NAME
+              csDisplayName: "Test Upstream Community Operators"
+              csPublisher: "Red Hat"
+EOF2
+
+ /bin/cat > ./3.OperatorGroup.yaml << EOF3
+            apiVersion: operators.coreos.com/v1alpha2
+            kind: OperatorGroup
+            metadata:
+              name: $OPERATOR_NAME
+              namespace: operators
+            spec:
+              targetNamespace:
+                - default
+
+
+            
+EOF3
+
+    /bin/cat > ./4.Subscription.yaml << EOF4
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: $OPERATOR_NAME
+              namespace: olm
+            spec:
+              channel: alpha
+              name: $OPERATOR_NAME
+              source: $OPERATOR_NAME-installed-upstream-community-operators-test
+              sourceNamespace: olm
+
+            
+EOF4
+}
+
+
+OPERATOR_NAME=$operatorname
+INSTALLMODE="ALL"
+NAMESPACE="default"
+startupMenuFunction(){
+    selection=
+        echo "
+        Install Mode
+        1 - OwnNamesapce/Single NameSpace
+        2 - All Namespace
+        
+    "
+        echo -n "Enter selection: "
+        read selection
+        echo ""
+        case $selection in
+            1 ) INSTALLMODE="SINGLE" ;;
+            2 ) INSTALLMODE="ALL" ;;
+            * ) echo "Please enter 1 or 2"
+        esac
+
+    echo "Enter OperatorName(also it is packagename)"
+    read operatorname
+    OPERATOR_NAME=$operatorname
+
+    export BRANCH_NAME=$branchname
+     if [ $INSTALLMODE == "SINGLE" ]
+        then
+            echo "Enter namespace to be installed"
+            read NAMESPACE
+      fi
+      
+    
+
+    echo "select operator setup option or test command"
+    selection=
+        echo "
+        PROGRAM MENU
+        1 - Community Operator
+        2 - Upstream Community Operator
+        
+    "
+        echo -n "Enter selection: "
+        read selection
+        echo ""
+        case $selection in
+            1 ) createFilesForOCPFunction ;;
+            2 ) createFilesForKubernetesFunction ;;
+            * ) echo "Please enter 1 or 2"
+        esac
+
+}
+startupMenuFunction
+echo " files are created"
