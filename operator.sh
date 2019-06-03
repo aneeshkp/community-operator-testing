@@ -1,12 +1,12 @@
 #!/bin/sh
 source="https://github.com/operator-framework/community-operators.git"
 OPERAOTR_DIRECTORY="$HOME/tigeroperators"
-export OPERATOR_TYPE="community-operators" 
-export OPERATOR_NAME="NONAMEOPERATOR"
-export BRANCH_NAME="master"
-export PULL_ID=0
-export AUTH_TOKEN=""
-export PACKAGE_NAME=""
+#export OPERATOR_TYPE="community-operators" 
+#export OPERATOR_NAME="NONAMEOPERATOR"
+#export BRANCH_NAME="master"
+#export PULL_ID=0
+#export AUTH_TOKEN=""
+#export PACKAGE_NAME=""
 
 
 helpFunction()
@@ -28,10 +28,7 @@ helpTestFunction()
          ( Then set it to export QUAY_TOKEN=""basic abcdefghijkl=="")
 
         2 - LINTING
-         operator-courier verify --ui_validate_io $OPERAOTR_DIRECTORY/$OPERATOR_NAME/community-operators/community-operators/$OPERATOR_NAME
-
-          or 
-        
+       
          operator-courier verify --ui_validate_io $OPERAOTR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME
          
 
