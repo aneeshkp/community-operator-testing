@@ -1,7 +1,6 @@
 #!/bin/sh
 source="https://github.com/operator-framework/community-operators.git"
 OPERATOR_DIRECTORY="$HOME/tigeroperators"
-ACTION=SETUP
 #export OPERATOR_TYPE="community-operators" 
 #export OPERATOR_NAME="NONAMEOPERATOR"
 #export BRANCH_NAME="master"
@@ -10,9 +9,18 @@ ACTION=SETUP
 #export PACKAGE_NAME=""
 
 error(){
-    msg=$1
-    printf "Error occured %s" "$msg"
-    echo "$1"
+    divider===============================
+    divider=$divider$divider
+    
+    header="\n %-s \n"
+    format=" \%-s \n"
+
+    width=43
+    printf "$header" "ERROR"
+    printf "%$width.${width}s\n" "$divider"
+    printf "$format" \
+    "$1"
+
 }
 #*********************************************
 # Print kubectl commands to isntall marketplace and olm required for testing "
@@ -68,9 +76,9 @@ setupOperatorFunction(){
     printf "Directory %s/%s created.\n" "$OPERATOR_DIRECTORY" "$OPERATOR_NAME"
 
     #Begin git  clone and PR's
-    cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/ || exit
+    cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"
     git clone $source
-    cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators || exit 
+    cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators 
     git fetch origin pull/"$PULL_ID"/head:"$BRANCH_NAME"
     git checkout "$BRANCH_NAME"
 
@@ -78,7 +86,7 @@ setupOperatorFunction(){
     if [ "$OPERATOR_TYPE" = "upstream-community-operators" ]
     then
         printf "Cloning other required repo\n"
-        cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/ || exit
+        cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"
         git clone https://github.com/operator-framework/operator-marketplace.git
         git clone https://github.com/operator-framework/operator-courier.git
         git clone https://github.com/operator-framework/operator-lifecycle-manager.git
@@ -86,15 +94,13 @@ setupOperatorFunction(){
         olminstallFunc
     else
         printf "Cloning other required repo (operator courier)\n"
-        cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/ || exit
+        cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"
         git clone https://github.com/operator-framework/operator-courier.git
     fi
 
     printf " *----------------------------------- Done -----------------------------------*\n"
     printf "Make sure you run [pip3 install operator-courier].\n"
-    ls "$OPERATOR_DIRECTORY" 
-    printf "cd %s/%s/%s\n" "$OPERATOR_DIRECTORY" "$OPERATOR_NAME" "$OPERATOR_TYPE"
-    cd "$OPERATOR_DIRECTORY" || exit
+    
 }
 
 #*********************************************
@@ -143,7 +149,6 @@ newoperatorName(){
 # Entry poin to NEW Operator setup
 #*********************************************
 newOperatorSetup(){
-    ACTION=SETUP
     newoperatorType
     newoperatorName
     printf "Enter Pull ID\n"
@@ -173,9 +178,7 @@ testVariableSetup(){
     then
       newoperatorName
     else
-       printf " Do you want to set up new or use existing operator\n"
-       echo  "****************** $OPERATOR_NAME ***********************\a "
-
+       printf " Do you want to set up new or use existing operator : %s \n" "$OPERATOR_NAME"
     selection=
 
         echo "
@@ -185,7 +188,7 @@ testVariableSetup(){
     "
     while :
     do
-        echo -r "Enter selection: "
+        echo -n "Enter selection: "
         read selection 
         echo ""
         case $selection in
@@ -204,17 +207,24 @@ testVariableSetup(){
 }
 setupQuay(){
 
+printf "\n Enter Quay setup\n"
 if [ ! -z "$QUAY_TOKEN" ]
 then
-    echo "quay token: $QUAY_TOKEN"
-    echo "Quay token already present, if you want new token clear env variable QUAY_TOKEN and run this again."
-    echo -n "Username: "
-    read QUAY_NAMESPACE
-
-    
+   if [ -z "$QUAY_NAMESPACE" ] 
+   then
+    echo -n "quay Namespace: "
+    read quaynamespace
+    export QUAY_NAMESPACE=$quaynamespace
+   fi
+    printf "quay token: %s\n" "$QUAY_TOKEN"
+    printf "quay token already present, if you want new token clear env variable QUAY_TOKEN and run this again.\n"
 else
-    echo -n "Quay Namespace: "
-    read QUAY_NAMESPACE
+    if [ -z "$QUAY_NAMESPACE" ] 
+    then
+        echo -n "quay Namespace: "
+        read quaynamespace
+        export QUAY_NAMESPACE=$quaynamespace
+   fi
     echo -n "Password: "
     read -s PASSWORD
     echo
@@ -242,15 +252,14 @@ fi
 # S Printing test commands 
 #*********************************************
 helpTestFunction(){ 
-    ACTION=HELP
     useexisting=$1
     if [ "$useexisting" = 0 ]
     then   
         testVariableSetup
-        echo "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/"
+        printf "%s/%s/community-operators/%s/%s\n" "$OPERATOR_DIRECTORY" "$OPERATOR_NAME" "$OPERATOR_TYPE" "$OPERATOR_NAME"
         if [ ! -d "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/" ] 
         then
-             printf "****************** $OPERATOR_NAME ***********************\n"
+             printf "OPERATOR : %s\n" "$OPERATOR_NAME"
              error "Error: Looks like you do not have the operator setup for $OPERATOR_NAME"
              return
         fi
@@ -274,28 +283,17 @@ helpTestFunction(){
     
     if  [ ! -e  "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$OPERATOR_NAME.package.yaml" ]
     then
+        PACKAGE_NAME="UNKNOWN"
+        PACKAGE_VERSION="0.0.0"
+        error "Check if you have entered valid pull id %s .\n" "$PULL_ID"
         error " No such file or directory $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$OPERATOR_NAME.package.yaml"
+
         return
     else
         PACKAGE_NAME="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep packageName | cut -f 2 -d' ')"
         PACKAGE_VERSION="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- )"
     fi
-
-
-    echo "
-       TEST OPTIONS   
-       -----------------------------------------------------------------------------------------------
-        1 - LINTING
-       
-         operator-courier verify --ui_validate_io $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME
-         
-
-        2 - QUAY PUSHING
-         operator-courier push \"""$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME""\" \"""$QUAY_NAMESPACE""\" \"""$PACKAGE_NAME""\" \"""$PACKAGE_VERSION""\" $QUAY_TOKEN
-         
-         -----------------------------------------------------------------------------------------------
-         "
-    
+    summary
     olminstallFunc
         
 }
@@ -304,7 +302,7 @@ helpTestFunction(){
 # Slapsh screen shown at the start
 #*********************************************
 startupMenuFunction(){
-    echo "select operator setup option or test command"
+    printf "Select operator setup option or test command.\n"
     selection=
         echo "
         PROGRAM MENU
@@ -330,11 +328,43 @@ startupMenuFunction(){
 
 }
 
+
 setup(){
     newOperatorSetup
     helpTestFunction 1
 }
 
+summary(){
+    divider===============================
+    divider=$divider$divider$divider$divider
+
+    header="\n%-20s %20s %20s %20s\n"
+    format="\n%-20s %20s %20s %20s\n"
+    width=100
+    printf "$header" "OPERATOR NAME" "OPERATOR TYPE" "PULL ID" "QUAY TOKEN"
+    printf "%$width.${width}s\n" "$divider"
+    printf "$format" \
+    "$OPERATOR_NAME" "$OPERATOR_TYPE" "$PULL_ID" "$QUAY_TOKEN"  
+     
+    format2="\n%-20s \n"
+    header2="\n%-20s \n"
+    printf "$header2" "LINTING"
+    printf "%$width.${width}s\n" "$divider"
+    printf "$format2" \
+    "operator-courier verify --ui_validate_io $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME"
+
+    printf "$header2" "QUAY PUSHING"
+    printf "%$width.${width}s\n" "$divider"
+    printf "$format2" \
+    "operator-courier push \"""$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME""\" \"""$QUAY_NAMESPACE""\" \"""$PACKAGE_NAME""\" \"""$PACKAGE_VERSION""\" $QUAY_TOKEN"
+
+    printf "$header2" "Folder"
+    printf "%$width.${width}s\n" "$divider"
+    printf "$format2" \
+    "$OPERATOR_DIRECTORY/$OPERATOR_NAME/$OPERATOR_TYPE"
+    printf  "\n"
+    
+}
 
 startupMenuFunction
 
