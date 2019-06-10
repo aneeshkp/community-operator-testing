@@ -213,7 +213,7 @@ then
 
     
 else
-    echo -n "Username: "
+    echo -n "Quay Namespace: "
     read QUAY_NAMESPACE
     echo -n "Password: "
     read -s PASSWORD
