@@ -22,6 +22,72 @@ error(){
     "$1"
 
 }
+createolmfun(){
+olmdir="$OPERATOR_DIRECTORY/$OPERATOR_NAME/olm"
+mkdir "$olmdir"
+if [ "$OPERATOR_TYPE" = "upstream-community-operators" ] 
+then
+cat <<EOT >> "$olmdir"/1.operator-source.yaml
+apiVersion: operators.coreos.com/v1
+kind: OperatorSource
+metadata:
+    name: $OPERATOR_NAME-operators
+    namespace: marketplace
+spec:
+    type: appregistry
+    endpoint: https://quay.io/cnr
+    registryNamespace: "$QUAY_NAMESPACE"
+EOT
+
+cat <<EOT >> "$olmdir"/2.catalog-source-config.yaml
+apiVersion: operators.coreos.com/v1
+kind: CatalogSourceConfig
+metadata:
+    name: $OPERATOR_NAME-operators
+    namespace: marketplace
+spec:
+    targetNamespace: olm
+    packages: "$OPERATOR_NAME"
+EOT
+
+cat <<EOT >> "$olmdir"/3.operator-group.yaml
+apiVersion: operators.coreos.com/v1alpha2
+kind: OperatorGroup
+metadata:
+  name: $OPERATOR_NAME-operatorgroup
+  namespace: default
+spec:
+  targetNamespaces:
+  - default
+EOT
+
+cat <<EOT >> "$olmdir"/4.operator-subscription.yaml
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: $OPERATOR_NAME-subsription
+  namespace: default
+spec:
+  channel: "$CHANNEL_NAME"
+  name: "$OPERATOR_NAME"
+  source: "$OPERATOR_NAME"-operators
+  sourceNamespace: olm
+EOT
+else    
+cat <<EOT >> "$olmdir"/1.operator-source.yaml
+apiVersion: operators.coreos.com/v1
+kind: OperatorSource
+metadata:
+    name: $OPERATOR_NAME-operators
+    namespace: openshift-marketplace
+spec:
+    type: appregistry
+    endpoint: https://quay.io/cnr
+    registryNamespace: "$QUAY_NAMESPACE"
+EOT
+fi
+
+}
 #*********************************************
 # Print kubectl commands to isntall marketplace and olm required for testing "
 #*********************************************
@@ -42,6 +108,35 @@ olminstallFunc(){
 
        "
     fi 
+}
+
+getPackageFilenameFormat(){
+     printf "Select filename for operator if its different then $OPERATOR_NAME.\n"
+    selection=
+        echo "
+        PROGRAM MENU
+        1 - Same as operator name
+        2 - Different
+        
+    "
+    while :
+    do
+        echo -n "Enter your selection (1/2): "
+        read  selection
+        echo ""
+        case $selection in
+            1 ) export FILE_NAME=$OPERATOR_NAME 
+                break 
+                ;;
+            2 ) echo "Enter filename"
+                read filename
+                export FILE_NAME=$filename
+                break
+                ;;
+            * ) echo "Please enter 1 or 2"
+        esac
+    done
+
 }
 #*********************************************
 # Sets up operator  1. Creating folder , 2) cloning git 3) fetching PR 4)  and 5) switching to branch
@@ -149,14 +244,53 @@ newoperatorName(){
 # Entry poin to NEW Operator setup
 #*********************************************
 newOperatorSetup(){
-    newoperatorType
-    newoperatorName
-    printf "Enter Pull ID\n"
-    read pullid
-    printf "Enter Branch name (The branch name you want to create):\n"
-    read brnachname
-    export PULL_ID=$pullid
-    export BRANCH_NAME=$brnachname
+    if [ ! -z "$FILE_NAME" ]  &&  [ ! -z "$OPERATOR_NAME" ] && [ ! -z "$OPERATOR_TYPE" ] && [ ! -z "$BRANCH_NAME" ] && [ ! -z "$PULL_ID" ]
+    then
+        printf "Environment variables are set , do you wish to contiue or use new ?\n"
+        printf "=======================================\n"
+        printf "OPERATOR NAME : %s\n" "$OPERATOR_NAME"
+        printf "OPERATOR TYPE : %s\n" "$OPERATOR_TYPE"
+        printf "FILE NAME : %s\n"  "$FILE_NAME"
+        printf "BRANCH NAME : %s\n" "$BRANCH_NAME"
+        printf "PULL ID : %s\n" "$PULL_ID"
+        printf "=======================================\n"
+
+         while :
+    do
+        echo "----------------------------"
+        echo -n "Continue=1  or  Setup new =2: "
+        read selection
+        echo ""
+        case $selection in
+            1 ) break
+                ;;
+            2 ) export FILE_NAME =""
+                newoperatorType
+                newoperatorName
+                getPackageFilenameFormat
+                printf "Enter Pull ID\n"
+                read pullid
+                printf "Enter Branch name (The branch name you want to create):\n"
+                read brnachname
+                export PULL_ID=$pullid
+                export BRANCH_NAME=$brnachname
+                break
+                ;;
+            * ) echo "Please enter 1, pr 2"
+        esac
+    done
+    else
+        export FILE_NAME=""
+        newoperatorType
+        newoperatorName
+        getPackageFilenameFormat
+        printf "Enter Pull ID\n"
+        read pullid
+        printf "Enter Branch name (The branch name you want to create):\n"
+        read brnachname
+        export PULL_ID=$pullid
+        export BRANCH_NAME=$brnachname
+    fi
     setupOperatorFunction
 }
 
@@ -255,7 +389,12 @@ helpTestFunction(){
     useexisting=$1
     if [ "$useexisting" = 0 ]
     then   
+        
         testVariableSetup
+        if [ -z $FILE_NAME]
+        then
+                getPackageFilenameFormat
+        fi 
         printf "%s/%s/community-operators/%s/%s\n" "$OPERATOR_DIRECTORY" "$OPERATOR_NAME" "$OPERATOR_TYPE" "$OPERATOR_NAME"
         if [ ! -d "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/" ] 
         then
@@ -264,7 +403,7 @@ helpTestFunction(){
              return
         fi
         
-        if  [ -e  "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$OPERATOR_NAME.package.yaml" ]
+        if  [ -e  "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$FILE_NAME.package.yaml" ]
         then
                 printf "Checking for OLM BUNDLE... exists \n"
         else
@@ -280,18 +419,21 @@ helpTestFunction(){
      printf "Couldn't get quay login.\n"
      QUAY_TOKEN="Couldn't get quay login"
     fi
+
     
-    if  [ ! -e  "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$OPERATOR_NAME.package.yaml" ]
+    
+    if  [ ! -e  "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$FILE_NAME.package.yaml" ]
     then
         PACKAGE_NAME="UNKNOWN"
         PACKAGE_VERSION="0.0.0"
         error "Check if you have entered valid pull id %s .\n" "$PULL_ID"
-        error " No such file or directory $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$OPERATOR_NAME.package.yaml"
+        error " No such file or directory $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$FILE_NAME.package.yaml"
 
         return
     else
-        PACKAGE_NAME="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep packageName | cut -f 2 -d' ')"
-        PACKAGE_VERSION="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- )"
+        PACKAGE_NAME="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep packageName | cut -f 2 -d' ' | awk '{print $1}')"
+        PACKAGE_VERSION="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- | awk '{print $1}' )"
+        CHANNEL_NAME=="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep  name | cut -f 2 -d':' | awk '{print $1}')"
     fi
     summary
     olminstallFunc
@@ -331,8 +473,10 @@ startupMenuFunction(){
 
 setup(){
     newOperatorSetup
+    createolmfun
     helpTestFunction 1
 }
+
 
 summary(){
     divider===============================
