@@ -1,0 +1,6 @@
+OPERATOR_NAME=seldon-operator
+OPERATTOR_TYPE=upstream-community-operators
+#OPERATRO_TYPE= community-operators
+FILE_NAME=seldonoperator
+PULL_ID=395
+BRANCH_NAME=test
