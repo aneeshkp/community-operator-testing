@@ -68,9 +68,9 @@ metadata:
   name: $OPERATOR_NAME-subsription
   namespace: default
 spec:
-  channel: "$CHANNEL_NAME"
-  name: "$OPERATOR_NAME"
-  source: "$OPERATOR_NAME"-operators
+  channel: $CHANNEL_NAME
+  name: $OPERATOR_NAME
+  source: $OPERATOR_NAME-operators
   sourceNamespace: olm
 EOT
 else    
