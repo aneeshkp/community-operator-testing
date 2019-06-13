@@ -25,7 +25,7 @@ error(){
 createolmfun(){
 olmdir="$OPERATOR_DIRECTORY/$OPERATOR_NAME/olm"
 mkdir "$olmdir"
-if [ "$OPERATOR_TYPE" = "upstream-community-operators" ] 
+if [[ "$OPERATOR_TYPE" = "upstream-community-operators" ]] 
 then
 cat <<EOT >> "$olmdir"/1.operator-source.yaml
 apiVersion: operators.coreos.com/v1
@@ -92,7 +92,7 @@ fi
 # Print kubectl commands to isntall marketplace and olm required for testing "
 #*********************************************
 olminstallFunc(){
-    if [ "$OPERATOR_TYPE" = "upstream-community-operators" ] 
+    if [[ "$OPERATOR_TYPE" = "upstream-community-operators" ]] 
     then
        echo "  
        INSTALL OLM
@@ -143,14 +143,14 @@ getPackageFilenameFormat(){
 #*********************************************
 setupOperatorFunction(){
     # Begin script in case all parameters are correct
-    if [ -d "$OPERATOR_DIRECTORY" ] 
+    if [[ -d "$OPERATOR_DIRECTORY" ]] 
     then
         printf "Directory %s exists.\n" "$OPERATOR_DIRECTORY"
     else
         printf "Error: Directory %s does not exists.\n" "$OPERATOR_DIRECTORY"
         read -p "Do you want to create directory $OPERATOR_DIRECTORY? " -n 1 -r
         echo    # (optional) move to a new line
-        if [[ $REPLY =~ ^[Yy]$ ]]
+        if [[ $REPLY =~ ^[[Yy]]$ ]]
         then
         # do dangerous stuff
         mkdir "$OPERATOR_DIRECTORY"
@@ -161,7 +161,7 @@ setupOperatorFunction(){
         fi
     fi
 
-    if [ -d "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME" ] 
+    if [[ -d "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME" ]] 
     then
         printf "%s/%s ... cleaning up\n" "$OPERATOR_DIRECTORY" "$OPERATOR_NAME"
         rm -rf "$OPERATOR_DIRECTORY/$OPERATOR_NAME"
@@ -178,7 +178,7 @@ setupOperatorFunction(){
     git checkout "$BRANCH_NAME"
 
 
-    if [ "$OPERATOR_TYPE" = "upstream-community-operators" ]
+    if [[ "$OPERATOR_TYPE" = "upstream-community-operators" ]]
     then
         printf "Cloning other required repo\n"
         cd "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"
@@ -194,7 +194,7 @@ setupOperatorFunction(){
     fi
 
     printf " *----------------------------------- Done -----------------------------------*\n"
-    printf "Make sure you run [pip3 install operator-courier].\n"
+    printf "Make sure you run [[pip3 install operator-courier]].\n"
     
 }
 
@@ -244,7 +244,7 @@ newoperatorName(){
 # Entry poin to NEW Operator setup
 #*********************************************
 newOperatorSetup(){
-    if [ ! -z "$FILE_NAME" ]  &&  [ ! -z "$OPERATOR_NAME" ] && [ ! -z "$OPERATOR_TYPE" ] && [ ! -z "$BRANCH_NAME" ] && [ ! -z "$PULL_ID" ]
+    if [[ ! -z "$FILE_NAME" ]]  &&  [[ ! -z "$OPERATOR_NAME" ]] && [[ ! -z "$OPERATOR_TYPE" ]] && [[ ! -z "$BRANCH_NAME" ]] && [[ ! -z "$PULL_ID" ]]
     then
         printf "Environment variables are set , do you wish to contiue or use new ?\n"
         printf "=======================================\n"
@@ -302,13 +302,13 @@ void(){
 #*********************************************
 testVariableSetup(){
 
-    if [ -z "$OPERATOR_TYPE" ]
+    if [[ -z "$OPERATOR_TYPE" ]]
     then
       newoperatorType
     else
      printf "Using operator type  $OPERATOR_TYPE"  
     fi
-    if [ -z "$OPERATOR_NAME" ]
+    if [[ -z "$OPERATOR_NAME" ]]
     then
       newoperatorName
     else
@@ -342,9 +342,9 @@ testVariableSetup(){
 setupQuay(){
 
 printf "\n Enter Quay setup\n"
-if [ ! -z "$QUAY_TOKEN" ]
+if [[ ! -z "$QUAY_TOKEN" ]]
 then
-   if [ -z "$QUAY_NAMESPACE" ] 
+   if [[ -z "$QUAY_NAMESPACE" ]] 
    then
     echo -n "quay Namespace: "
     read quaynamespace
@@ -353,7 +353,7 @@ then
     printf "quay token: %s\n" "$QUAY_TOKEN"
     printf "quay token already present, if you want new token clear env variable QUAY_TOKEN and run this again.\n"
 else
-    if [ -z "$QUAY_NAMESPACE" ] 
+    if [[ -z "$QUAY_NAMESPACE" ]] 
     then
         echo -n "quay Namespace: "
         read quaynamespace
@@ -374,7 +374,7 @@ else
 
     export QUAY_TOKEN=$(echo "$quayout" | jq '.token')
 
-    if [ -z "$QUAY_TOKEN" ]
+    if [[ -z "$QUAY_TOKEN" ]]
     then 
     printf "Error  logging  to quay %s\n" "$error"
     fi
@@ -386,35 +386,39 @@ fi
 # S Printing test commands 
 #*********************************************
 helpTestFunction(){ 
+    local deploy_dir package_file
     useexisting=$1
-    if [ "$useexisting" = 0 ]
+    deploy_dir="${OPERATOR_DIRECTORY}/${OPERATOR_NAME}/community-operators/${OPERATOR_TYPE}/${OPERATOR_NAME}"
+    package_file="${deploy_dir}/${FILE_NAME}.package.yaml"    
+    if [[ "$useexisting" = 0 ]]
     then   
-        
         testVariableSetup
-        if [ -z $FILE_NAME]
+        deploy_dir="${OPERATOR_DIRECTORY}/${OPERATOR_NAME}/community-operators/${OPERATOR_TYPE}/${OPERATOR_NAME}"
+        if [[ -z $FILE_NAME ]]
         then
                 getPackageFilenameFormat
         fi 
+        package_file="${deploy_dir}/${FILE_NAME}.package.yaml"
         printf "%s/%s/community-operators/%s/%s\n" "$OPERATOR_DIRECTORY" "$OPERATOR_NAME" "$OPERATOR_TYPE" "$OPERATOR_NAME"
-        if [ ! -d "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/" ] 
+        if [[ ! -d "$deploy_dir" ]] 
         then
              printf "OPERATOR : %s\n" "$OPERATOR_NAME"
              error "Error: Looks like you do not have the operator setup for $OPERATOR_NAME"
              return
         fi
         
-        if  [ -e  "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$FILE_NAME.package.yaml" ]
+        if  [[ -e  "$package_file" ]]
         then
                 printf "Checking for OLM BUNDLE... exists \n"
         else
             printf "***************************************************************************************\n"
              error " OLM  bundle does not exists for oeprator $OPERATOR_NAME , please setup operator first. \n"
              return
-        fi
+        fi    
     fi
     
     setupQuay
-    if [ -z "$QUAY_TOKEN" ]
+    if [[ -z "$QUAY_TOKEN" ]]
     then 
      printf "Couldn't get quay login.\n"
      QUAY_TOKEN="Couldn't get quay login"
@@ -422,18 +426,19 @@ helpTestFunction(){
 
     
     
-    if  [ ! -e  "$OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$FILE_NAME.package.yaml" ]
+    
+
+    if  [[ ! -e  "$deploy_dir/$FILE_NAME.package.yaml" ]]
     then
         PACKAGE_NAME="UNKNOWN"
         PACKAGE_VERSION="0.0.0"
-        error "Check if you have entered valid pull id %s .\n" "$PULL_ID"
-        error " No such file or directory $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME/$FILE_NAME.package.yaml"
-
+        error "Check if you have entered valid pull id "$PULL_ID""
+        error " No such file or directory "${package_file}""
         return
     else
-        PACKAGE_NAME="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep packageName | cut -f 2 -d' ' | awk '{print $1}')"
-        PACKAGE_VERSION="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- | awk '{print $1}' )"
-        CHANNEL_NAME=="$(cat "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME"/*package* | grep  name | cut -f 2 -d':' | awk '{print $1}')"
+        PACKAGE_NAME="$(cat "${package_file}" | grep packageName | cut -f 2 -d' ' | awk '{print $1}')"
+        PACKAGE_VERSION="$(cat "${package_file}" | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- | awk '{print $1}' )"
+        CHANNEL_NAME=="$(cat "${package_file}" | grep  name | cut -f 2 -d':' | awk '{print $1}')"
     fi
     summary
     olminstallFunc
@@ -481,6 +486,7 @@ setup(){
 summary(){
     divider===============================
     divider=$divider$divider$divider$divider
+    local deploy_dir="${OPERATOR_DIRECTORY}/${OPERATOR_NAME}/community-operators/${OPERATOR_TYPE}/${OPERATOR_NAME}"
 
     header="\n%-20s %20s %20s %20s\n"
     format="\n%-20s %20s %20s %20s\n"
@@ -495,12 +501,12 @@ summary(){
     printf "$header2" "LINTING"
     printf "%$width.${width}s\n" "$divider"
     printf "$format2" \
-    "operator-courier verify --ui_validate_io $OPERATOR_DIRECTORY/$OPERATOR_NAME/community-operators/$OPERATOR_TYPE/$OPERATOR_NAME"
+    "operator-courier verify --ui_validate_io "$deploy_dir""
 
     printf "$header2" "QUAY PUSHING"
     printf "%$width.${width}s\n" "$divider"
     printf "$format2" \
-    "operator-courier push \"""$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/community-operators/$OPERATOR_TYPE/"$OPERATOR_NAME""\" \"""$QUAY_NAMESPACE""\" \"""$PACKAGE_NAME""\" \"""$PACKAGE_VERSION""\" $QUAY_TOKEN"
+    "operator-courier push \""${deploy_dir}"\" \""${QUAY_NAMESPACE}"\" \""${PACKAGE_NAME}"\" \""${PACKAGE_VERSION}"\" "$QUAY_TOKEN""
 
     printf "$header2" "Folder"
     printf "%$width.${width}s\n" "$divider"
