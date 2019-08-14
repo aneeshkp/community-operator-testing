@@ -7,7 +7,8 @@ OPERATOR_DIRECTORY="$HOME/tigeroperators"
 #export PULL_ID=0
 #export AUTH_TOKEN=""
 #export PACKAGE_NAME=""
-
+#export CHANNEL_NAME=""
+#export QUAY_TOKEN=""
 error(){
     divider===============================
     divider=$divider$divider
@@ -55,10 +56,10 @@ apiVersion: operators.coreos.com/v1alpha2
 kind: OperatorGroup
 metadata:
   name: $OPERATOR_NAME-operatorgroup
-  namespace: default
-spec:
-  targetNamespaces:
-  - default
+  namespace: marketplace
+#spec:
+#  targetNamespaces:
+#  - default
 EOT
 
 cat <<EOT >> "$olmdir"/4.operator-subscription.yaml
@@ -66,12 +67,12 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: $OPERATOR_NAME-subsription
-  namespace: default
+  namespace: marketplace
 spec:
   channel: $CHANNEL_NAME
   name: $OPERATOR_NAME
   source: $OPERATOR_NAME-operators
-  sourceNamespace: olm
+  sourceNamespace: marketplace
 EOT
 else    
 cat <<EOT >> "$olmdir"/1.operator-source.yaml
@@ -105,6 +106,7 @@ olminstallFunc(){
        (find it here $OPERATOR_DIRECTORY/$OPERATOR_NAME/)
 
        kubectl apply -f $OPERATOR_NAME/operator-marketplace/deploy/upstream/
+
 
        "
     fi 
@@ -253,6 +255,10 @@ newOperatorSetup(){
         printf "FILE NAME : %s\n"  "$FILE_NAME"
         printf "BRANCH NAME : %s\n" "$BRANCH_NAME"
         printf "PULL ID : %s\n" "$PULL_ID"
+        printf "CHANNEL : %s\n" "$CHANNEL_NAME"
+        printf "PACKAGE_NAME: %s\n" "$PACKAGE_NAME"
+        printf "QUAY_NAMESPACE: %s\n" "$QUAY_NAMESPACE"
+        printf "QUAY_TOKEN: %s\n" "$QUAY_TOKEN"
         printf "=======================================\n"
 
          while :
@@ -342,13 +348,14 @@ testVariableSetup(){
 setupQuay(){
 
 printf "\n Enter Quay setup\n"
-if [[ ! -z "$QUAY_TOKEN" ]]
+#if its empty and !=null
+if [[ ! -z "$QUAY_TOKEN" &&  "$QUAY_TOKEN"! = "null" ]]
 then
    if [[ -z "$QUAY_NAMESPACE" ]] 
    then
     echo -n "quay Namespace: "
     read quaynamespace
-    export QUAY_NAMESPACE=$quaynamespace
+    export QUAY_NAMESPACE="$quaynamespace"
    fi
     printf "quay token: %s\n" "$QUAY_TOKEN"
     printf "quay token already present, if you want new token clear env variable QUAY_TOKEN and run this again.\n"
@@ -357,7 +364,7 @@ else
     then
         echo -n "quay Namespace: "
         read quaynamespace
-        export QUAY_NAMESPACE=$quaynamespace
+        export QUAY_NAMESPACE="$quaynamespace"
    fi
     echo -n "Password: "
     read -s PASSWORD
@@ -430,15 +437,18 @@ helpTestFunction(){
 
     if  [[ ! -e  "$deploy_dir/$FILE_NAME.package.yaml" ]]
     then
-        PACKAGE_NAME="UNKNOWN"
-        PACKAGE_VERSION="0.0.0"
+        export PACKAGE_NAME="UNKNOWN"
+        export PACKAGE_VERSION="0.0.0"
+        export CHANNEL_NAME="UNKNOWN"
         error "Check if you have entered valid pull id "$PULL_ID""
         error " No such file or directory "${package_file}""
         return
     else
-        PACKAGE_NAME="$(cat "${package_file}" | grep packageName | cut -f 2 -d' ' | awk '{print $1}')"
-        PACKAGE_VERSION="$(cat "${package_file}" | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- | awk '{print $1}' )"
-        CHANNEL_NAME=="$(cat "${package_file}" | grep  name | cut -f 2 -d':' | awk '{print $1}')"
+        export PACKAGE_NAME="$(cat "${package_file}" | grep packageName | cut -f 2 -d' ' | awk '{print $1}')"
+        echo " PACKAGE_VERSION=$(cat "${package_file}" | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- | awk '{print $1}' )"
+        export PACKAGE_VERSION="$(cat "${package_file}" | grep currentCSV | cut -d'.' -f2- | cut -d'v' -f2- | awk '{print $1}' )"
+        echo "CHANNEL_NAME=$(cat "${package_file}" | grep  name | cut -f 2 -d':' | awk '{print $1}')"
+        export CHANNEL_NAME="$(cat "${package_file}" | grep  name | cut -f 2 -d':' | awk '{print $1}')"
     fi
     summary
     olminstallFunc
@@ -506,7 +516,10 @@ summary(){
     printf "$header2" "QUAY PUSHING"
     printf "%$width.${width}s\n" "$divider"
     printf "$format2" \
-    "operator-courier push \""${deploy_dir}"\" \""${QUAY_NAMESPACE}"\" \""${PACKAGE_NAME}"\" \""${PACKAGE_VERSION}"\" "$QUAY_TOKEN""
+    "operator-courier push \""${deploy_dir}"\" \""${QUAY_NAMESPACE}"\" \""${PACKAGE_NAME}"\" \""${PACKAGE_VERSION}"\" "${QUAY_TOKEN}""
+    
+     printf "$format2"\ 
+    "scripts/ci/test-operator '${OPERATOR_TYPE}/${OPERATOR_NAME}' '${PACKAGE_VERSION}' 'upstream'"
 
     printf "$header2" "Folder"
     printf "%$width.${width}s\n" "$divider"
@@ -517,4 +530,3 @@ summary(){
 }
 
 startupMenuFunction
-
