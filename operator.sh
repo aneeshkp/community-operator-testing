@@ -533,7 +533,7 @@ summary(){
 
     cat <<EOF >> ./apply.txt
 
-        operator-courier push \""${deploy_dir}"\" \""${QUAY_NAMESPACE}"\" \""${PACKAGE_NAME}"\" \""${PACKAGE_VERSION}"\" "${QUAY_TOKEN}"
+        operator-courier push "${deploy_dir}" "${QUAY_NAMESPACE}" "${PACKAGE_NAME}" "${PACKAGE_VERSION}" "${QUAY_TOKEN}"
 
         scripts/ci/test-operator '${OPERATOR_TYPE}/${OPERATOR_NAME}' '${PACKAGE_VERSION}' 'upstream'
         
