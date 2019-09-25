@@ -1,6 +1,8 @@
-OPERATOR_NAME=seldon-operator
-OPERATTOR_TYPE=upstream-community-operators
-#OPERATRO_TYPE= community-operators
-FILE_NAME=seldonoperator
-PULL_ID=395
+OPERATOR_NAME=ibmcloud-operator
+#OPERATTOR_TYPE=upstream-community-operators
+OPERATOR_TYPE=community-operators
+FILE_NAME=ibmcloud_operator
+PULL_ID=712
 BRANCH_NAME=test
+PACKAGE_NAME=ibmcloud-operator
+CHANNEL_NAME=alpha

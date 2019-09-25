@@ -93,22 +93,25 @@ fi
 # Print kubectl commands to isntall marketplace and olm required for testing "
 #*********************************************
 olminstallFunc(){
+
     if [[ "$OPERATOR_TYPE" = "upstream-community-operators" ]] 
     then
-       echo "  
-       INSTALL OLM
-       ----------------------
-       kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.10.0/crds.yaml
-       kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.10.0/olm.yaml
+      cat <<EOG >> ./apply_olm.txt 
+                INSTALL OLM
+               ----------------------
+               kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.11.0/crds.yaml
+               kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.11.0/olm.yaml
+        
+               INSTALL MARKET PLACE
+               ----------------------  
+               (find it here "$OPERATOR_DIRECTORY"/"$OPERATOR_NAME"/)
 
-       INSTALL MARKET PLACE
-       ----------------------  
-       (find it here $OPERATOR_DIRECTORY/$OPERATOR_NAME/)
+               kubectl apply -f "$OPERATOR_NAME"/operator-marketplace/deploy/upstream/
 
-       kubectl apply -f $OPERATOR_NAME/operator-marketplace/deploy/upstream/
-
-
-       "
+              
+EOG
+    echo ./apply_olm.txt
+ 
     fi 
 }
 
@@ -512,6 +515,7 @@ summary(){
     printf "%$width.${width}s\n" "$divider"
     printf "$format2" \
     "operator-courier verify --ui_validate_io "$deploy_dir""
+    
 
     printf "$header2" "QUAY PUSHING"
     printf "%$width.${width}s\n" "$divider"
@@ -526,6 +530,16 @@ summary(){
     printf "$format2" \
     "$OPERATOR_DIRECTORY/$OPERATOR_NAME/$OPERATOR_TYPE"
     printf  "\n"
+
+    cat <<EOF >> ./apply.txt
+
+        operator-courier push \""${deploy_dir}"\" \""${QUAY_NAMESPACE}"\" \""${PACKAGE_NAME}"\" \""${PACKAGE_VERSION}"\" "${QUAY_TOKEN}"
+
+        scripts/ci/test-operator '${OPERATOR_TYPE}/${OPERATOR_NAME}' '${PACKAGE_VERSION}' 'upstream'
+        
+        operator-courier verify --ui_validate_io "$deploy_dir"
+
+EOF
     
 }
 
